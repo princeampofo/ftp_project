@@ -10,9 +10,9 @@
 #define PORT 21
 #define IP_ADDRESS "127.0.0.1"
 #define CLIENT_INPUT_SIZE 100
-#define SERVER_RESPONSE_SIZE 3000
+#define SERVER_RESPONSE_SIZE 300
 
-void execute_ftp_command(int sock);
+void execute_ftp_command(int sock, char* server_response);
 
 int main(){
 
@@ -37,9 +37,15 @@ int main(){
         perror("Error connecting socket to address specified!\n");
         exit(0);
     }
+    char serv_connection_response[SERVER_RESPONSE_SIZE];
+	if (recv(client_socket, serv_connection_response, sizeof(serv_connection_response), 0) < 0)
+	{
+		perror("ERROR in recvfrom");
+	}
+    printf("%s", serv_connection_response);
 
     //execute ftp command
-	execute_ftp_command(client_socket);
+	execute_ftp_command(client_socket, serv_connection_response);
     
     close(client_socket);
 
@@ -48,9 +54,8 @@ int main(){
 }
 
 
-void execute_ftp_command(int sock){
+void execute_ftp_command(int sock, char* server_response){
     char client_input[CLIENT_INPUT_SIZE];
-    char server_response[SERVER_RESPONSE_SIZE];
     int char_count;
     do{
         bzero(server_response,sizeof(server_response));
@@ -68,8 +73,6 @@ void execute_ftp_command(int sock){
             else{
                 // send command to server
             }
-
-
         }while(strlen(client_input)!=0);
 
     }while(strcmp(client_input,"QUIT") !=0);
