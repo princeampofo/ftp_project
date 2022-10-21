@@ -6,7 +6,6 @@
 #include <sys/types.h>
 #include<arpa/inet.h>
 #include <string.h>
-#include "parse.h"
 
 #define PORT 21
 #define IP_ADDRESS "127.0.0.1"
@@ -86,7 +85,7 @@ void load_server_logins(){
         while(fgets(file_data,sizeof file_data , fp)!=NULL){
             char *token = strtok(file_data,",");
             strcpy(logins_array[count].u_name, token);
-            strcpy(logins_array[count].p_word,token = strtok(NULL,"\n"));
+            strcpy(logins_array[count].p_word, strtok(NULL,"\n"));
             count ++;
         }
     }
