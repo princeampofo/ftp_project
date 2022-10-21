@@ -61,7 +61,7 @@ int main(){
         close(server_socket);
         exit(0);
     }
-
+    printf("Server is running on PORT 21...\n");
     // create fd_sets and zero out each fd_set
     fd_set current_sockets, ready_sockets;
     FD_ZERO(&current_sockets);
@@ -90,7 +90,7 @@ int main(){
                     }
 
                     FD_SET(client_socket,&current_sockets);
-                    char msg_to_client[] = "220 Service ready for new user.";
+                    char msg_to_client[] = "220 Service ready for new user.\n";
                     send(client_socket,msg_to_client,sizeof(msg_to_client),0);
                 }
                 
@@ -103,9 +103,8 @@ int main(){
 
                     // if message is Quit or zero in length , close connection and remove from current socket set
                     if (strcmp(cmd_from_client,"QUIT")==0 || strlen(cmd_from_client)==0){
-                        char client_msg[]="221 Service closing control connection";
+                        char client_msg[]="221 Service closing control connection\n";
                         send(fd,client_msg,sizeof client_msg,0);
-
                         close(fd);
                         FD_CLR(fd,&current_sockets);
                         break;  
@@ -142,7 +141,7 @@ void load_server_logins(){
         while(fgets(file_data,sizeof file_data , fp)!=NULL){
             char *token = strtok(file_data,",");
             strcpy(logins_array[count].u_name, token);
-            strcpy(logins_array[count].p_word,token = strtok(NULL,"\n"));
+            strcpy(logins_array[count].p_word, strtok(NULL,"\n"));
             count ++;
         }
     }
