@@ -5,7 +5,6 @@
 #include<arpa/inet.h>
 #include <string.h>
 #include <unistd.h>
-#include "parse.h"
 
 #define PORT 21
 #define IP_ADDRESS "127.0.0.1"
@@ -58,7 +57,7 @@ void execute_ftp_command(int sock, char* server_response){
     char client_input[CLIENT_INPUT_SIZE];
     int char_count;
     do{
-        bzero(server_response,sizeof(server_response));
+        bzero(server_response,SERVER_RESPONSE_SIZE);
         do{
             bzero(client_input,sizeof(client_input));
             printf("ftp> ");
