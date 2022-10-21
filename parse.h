@@ -1,0 +1,1 @@
+int parseBasic(char **u_cmd, char *parse_string);
