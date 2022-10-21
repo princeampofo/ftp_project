@@ -15,7 +15,7 @@ void execute_ftp_command(int sock, char* server_response);
 
 int main(){
 
-    // // create a socket(end pointt for communication)
+    // create a socket(end pointt for communication)
     int client_socket = socket(AF_INET,SOCK_STREAM,0);
 
     // if the socket return value is -1 , there was an error creating it
@@ -43,18 +43,19 @@ int main(){
 	}
     printf("%s", serv_connection_response);
 
+
     //execute ftp command
 	execute_ftp_command(client_socket, serv_connection_response);
-    
-    close(client_socket);
 
+    // close the socket
+    close(client_socket);
 
     return EXIT_SUCCESS;
 }
 
 void execute_locally(char* input_command){
     char* client_command = strtok(input_command, " ");
-    char* client_argument = strtok(NULL, " ");
+    char* client_argument = strtok(NULL, "\n");
 
     if (strcmp(client_command, "!LIST") == 0){
         if (client_argument != NULL){
@@ -67,10 +68,9 @@ void execute_locally(char* input_command){
             printf("No folder name provided!\n");
         }
         else{
-            char command[256];
-            strcpy(command, "cd ");
-            strcat(command, client_argument);
-            system(command);
+            if (chdir(client_argument) != 0){
+                printf("Couldn't change working directory\n");
+            }
         }
     }
     else if (strcmp(client_command, "!PWD") == 0){
@@ -109,14 +109,14 @@ void execute_ftp_command(int sock, char* server_response){
             // send command to server
             if (send(sock, client_input, sizeof(client_input), 0) < 0)
             {
-                perror("ERROR in sendto");
+                perror("Error sending command to server!\n");
             }
             // receive response from server
-            if (recv(sock, server_response,SERVER_RESPONSE_SIZE, 0) < 0)
+            if (recv(sock, server_response, SERVER_RESPONSE_SIZE, 0) < 0)
             {
-                perror("ERROR in recvfrom");
+                perror("Error receiving command from server!\n");
             }
-            printf("%s", server_response);
+            printf("%s\n", server_response);
         }
     }while(strcmp(client_input,"QUIT") !=0);
 
