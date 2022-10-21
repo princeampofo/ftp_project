@@ -39,9 +39,10 @@ int main(){
     char serv_connection_response[SERVER_RESPONSE_SIZE];
 	if (recv(client_socket, serv_connection_response, sizeof(serv_connection_response), 0) < 0)
 	{
-		perror("Error receiving command from server!\n");
+		perror("Error receiving message from server\n");
 	}
-    printf("%s\n", serv_connection_response);
+    printf("%s", serv_connection_response);
+
 
     //execute ftp command
 	execute_ftp_command(client_socket, serv_connection_response);
@@ -86,6 +87,7 @@ void execute_locally(char* input_command){
 void execute_ftp_command(int sock, char* server_response){
     char client_input[CLIENT_INPUT_SIZE];
     int char_count;
+        
     do{
         bzero(server_response,SERVER_RESPONSE_SIZE);
         bzero(client_input,sizeof(client_input));
