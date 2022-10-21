@@ -5,7 +5,7 @@
 #include<arpa/inet.h>
 #include <string.h>
 #include <unistd.h>
-#include "../parse.h"
+#include "parse.h"
 
 #define PORT 21
 #define IP_ADDRESS "127.0.0.1"

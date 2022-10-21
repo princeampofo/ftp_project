@@ -6,7 +6,7 @@
 #include <sys/types.h>
 #include<arpa/inet.h>
 #include <string.h>
-#include "../parse.h"
+#include "parse.h"
 
 #define PORT 21
 #define IP_ADDRESS "127.0.0.1"
@@ -76,7 +76,7 @@ void execute_client_command(){
 }
 
 void load_server_logins(){
-    FILE *fp= fopen("../users.txt","r");
+    FILE *fp= fopen("./users.txt","r");
 
     if (fp!=NULL){
         int count = 0;
