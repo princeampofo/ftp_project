@@ -272,19 +272,18 @@ int main(){
             printf("502 Command not implemented.\n");
             }
             else{
-            //Send command to server
-            if(send(sock, command, sizeof(command), 0) < 0){
-                printf("Error sending command to server\n");
-                exit(1);
-            }
-            // print command sent 
-            printf("Command sent: %s\n", command);
-            //Receive server response
-            if(recv(sock, &server_response, sizeof(server_response), 0) < 0){
-                printf("Error receiving server response\n");
-                exit(1);
-            }
-            printf("%s", server_response);
+                //Send command to server
+                if(send(sock, command, sizeof(command), 0) < 0){
+                    printf("Error sending command to server\n");
+                    exit(1);
+                }
+            
+                //Receive server response
+                if(recv(sock, &server_response, sizeof(server_response), 0) < 0){
+                    printf("Error receiving server response\n");
+                    exit(1);
+                }
+                printf("%s", server_response);
             }
         }
         if(strcmp(command, "QUIT") == 0){
@@ -298,10 +297,6 @@ int main(){
 void execute_locally(char* input_command){
     char* client_command = strtok(input_command, " ");
     char* client_argument = strtok(NULL, "");
-
-    // print client command and argument
-    // printf("Client command: %s\n", client_command);
-    // printf("Client argument: %s\n", client_argument);
 
     if (strcmp(client_command, "!LIST") == 0){
         if (client_argument != NULL){
