@@ -271,7 +271,14 @@ int main(){
                //List files in server
                listFile(client_argument, server_sock, data_sock);
             }
-            
+            // // Check if there is still data to be received
+            // if(recv(sock, &server_response, sizeof(server_response), MSG_DONTWAIT) > 0){
+            //    printf("%s", server_response);
+            // }
+            // else{
+            //    printf("226 Transfer completed.\n");
+            // }
+
             //Receive transfer complete message
             if(recv(sock, &server_response, sizeof(server_response), 0) < 0){
                printf("Error receiving server response\n");
@@ -280,7 +287,7 @@ int main(){
             printf("%s", server_response);
          }
          else if(strncmp(command, "PORT", 4) == 0){
-            printf("502 Command not implemented.\n");
+            printf("202 Command not implemented.\n");
          }
          else{
             //Send command to server
@@ -363,6 +370,7 @@ void retrieveFile(char* filename, int server_sock, int data_sock){
    rename(tempFileName, filename);
    close(data_sock);
    close(server_sock);
+   return;
 }
 
 void sendFile(char* filename, int server_sock, int data_sock, FILE* file){
