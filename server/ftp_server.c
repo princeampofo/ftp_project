@@ -14,9 +14,6 @@
 #define LOGGED_IN_SIZE 20
 #define FILE_BUFFER_SIZE 1024
 
-int client_port;
-char client_ip[20];
-
 typedef struct login_info{
     char u_name[15];
     char p_word[15];
@@ -24,7 +21,6 @@ typedef struct login_info{
 
 void load_server_logins();
 void bindAndlisten(int server_socket, struct sockaddr_in server_address);
-void execute_client_command(int sock, char* client_command);
 void checkUser(int sock, char* client_command);
 void checkPassword(int sock, char* client_command);
 void sendWorkingDirectory(int sock, char* client_command);
@@ -33,6 +29,7 @@ int dataConnection(char* IP, long port);
 void sendFile(int sock, char* client_command, int data_sock);
 void receiveFile(int sock, char* client_command, int data_sock);
 void listDirectory(int sock, char* client_command, int data_sock);
+void execute_client_command(int sock, char* client_command);
 
 
 LOGIN_INFO logins_array[LOGGED_IN_SIZE];
@@ -103,10 +100,11 @@ int main(){
                 }
                 // if a client socket is set ,get command and execute it
                 else{
-                    char *cmd_from_client = (char*)malloc(CLIENT_MSG_SIZE);
+                    char cmd_from_client[CLIENT_MSG_SIZE];
                     bzero(cmd_from_client, CLIENT_MSG_SIZE);
                     // receive message
                     recv(fd,cmd_from_client,CLIENT_MSG_SIZE,0);
+
 
                     if(strncmp(cmd_from_client, "QUIT", 4) == 0 || strlen(cmd_from_client) == 0){
                         char msg_to_client[] = "221 Service closing control connection.\n";
@@ -115,26 +113,7 @@ int main(){
                         FD_CLR(fd,&current_sockets);
                         break;
                     }
-
-                    // if command is RETR or STOR or LIST , get the client port
-                    if(strncmp(cmd_from_client, "RETR", 4) == 0 || strncmp(cmd_from_client, "STOR", 4) == 0 || strncmp(cmd_from_client, "LIST", 4) == 0){
-                        // fork a child process
-                        int pid = fork();
-                        if (pid == 0){
-                            // close the server socket
-                            close(server_socket);
-                            // execute command
-                            execute_client_command(fd,cmd_from_client);
-                            exit(0);
-                        }
-                        else{
-                            // do none in parent process
-                        }
-                    }
-                    else{
-                        execute_client_command(fd,cmd_from_client);
-                    }
-                    
+                    execute_client_command(fd,cmd_from_client);
                 }
             }
         }
@@ -297,6 +276,7 @@ void sendFile(int sock, char* arg, int data_sock){
     if(arg==NULL){
         char client_msg1[]="501 Syntax error in parameters or arguments.\n";
         send(sock,client_msg1,sizeof client_msg1,0);
+        close(data_sock);
     }
     else{
         FILE *fp = fopen(arg, "rb");
@@ -327,6 +307,7 @@ void receiveFile(int sock, char* arg, int data_sock){
     if(arg==NULL){
         char client_msg1[]="501 Syntax error in parameters or arguments.\n";
         send(sock,client_msg1,sizeof client_msg1,0);
+        close(data_sock);
     }
     else{
         int randNumber = rand() % 1000;
@@ -344,8 +325,29 @@ void receiveFile(int sock, char* arg, int data_sock){
             bzero(buffer, sizeof(buffer));
         }
         fclose(tempFile);
-        rename(tempFileName, arg);
         close(data_sock);
+
+        FILE *fp = fopen(arg, "wb");
+        if(fp == NULL){
+            char client_msg1[]="550 Could not create file.\n";
+            send(sock,client_msg1,sizeof client_msg1,0);
+            close(data_sock);
+        }
+
+        FILE *tempFile2 = fopen(tempFileName, "rb");
+        if(tempFile2 == NULL){
+            perror("Could not open temp file.\n");
+        }
+        char buffer2[FILE_BUFFER_SIZE];
+        bzero(buffer2, sizeof(buffer2));
+        int bytes_read2;
+        while((bytes_read2 = fread(buffer2, 1, FILE_BUFFER_SIZE, tempFile2)) > 0){
+            fwrite(buffer2, 1, bytes_read2, fp);
+            bzero(buffer2, sizeof(buffer2));
+        }
+        fclose(tempFile2);
+        fclose(fp);
+        remove(tempFileName);
 
         char client_msg2[] = "226 Transfer completed.\n";
         send(sock,client_msg2,sizeof client_msg2,0);
@@ -353,26 +355,36 @@ void receiveFile(int sock, char* arg, int data_sock){
 }
 
 void listDirectory(int sock, char* arg, int data_sock){
-    if(arg!=NULL){
-        char client_msg1[]="501 Syntax error in parameters or arguments.\n";
-        send(sock,client_msg1,sizeof client_msg1,0);
-        close(data_sock);
+
+    char buffer[FILE_BUFFER_SIZE];
+    bzero(buffer, sizeof(buffer));
+
+    char command[1024];
+    if(arg==NULL){
+        sprintf(command, "ls");
     }
     else{
-        char client_msg1[]="150 File status okay; about to open data connection.\n";
-        send(sock,client_msg1,sizeof client_msg1,0);
-        char buffer[FILE_BUFFER_SIZE];
-        bzero(buffer, sizeof(buffer));
-        FILE *fp = popen("ls", "r");
-        while(fgets(buffer, FILE_BUFFER_SIZE, fp) != NULL){
-            send(data_sock, buffer, strlen(buffer), 0);
-            bzero(buffer, sizeof(buffer));
+        if(access(arg, F_OK) < 0){
+            char client_msg1[]="550 No such file or directory.\n";
+            send(sock,client_msg1,sizeof client_msg1,0);
+            close(data_sock);
+            return;
         }
-        pclose(fp);
-        close(data_sock);
-        char client_msg2[] = "226 Transfer completed.\n";
-        send(sock,client_msg2,sizeof client_msg2,0);
+        sprintf(command, "ls %s", arg);
     }
+    FILE *fp = popen(command, "r");
+
+    char client_msg1[] = "150 File status okay; about to open data connection.\n";
+    send(sock,client_msg1,sizeof client_msg1,0);
+
+    while(fgets(buffer, FILE_BUFFER_SIZE, fp) != NULL){
+        send(data_sock, buffer, strlen(buffer), 0);
+        bzero(buffer, sizeof(buffer));
+    }
+    pclose(fp);
+    close(data_sock);
+    char client_msg2[] = "226 Transfer completed.\n";
+    send(sock,client_msg2,sizeof client_msg2,0);
 }
 
 void execute_client_command(int sock, char* client_command){
@@ -423,39 +435,46 @@ void execute_client_command(int sock, char* client_command){
         strcpy(p1,strtok(NULL,","));
         strcpy(p2,strtok(NULL, ""));
 
-        bzero(client_ip, sizeof(client_ip));
-        strcpy(client_ip, IP);
         long p1val = strtol(p1,NULL,10);
         long p2val = strtol(p2,NULL,10);
-        client_port = p1val*256+p2val;
+        long port = p1val*256+p2val;
 
         //Send port command successful to client
         char msg_to_client[]= "200 PORT command successful.\n";
         send(sock, msg_to_client, sizeof(msg_to_client), 0);
+        
+        int pid = fork();
+        if(pid == 0){
+            //Open data connection to client
+            int data_sock = dataConnection(IP, port);
 
-        return;
-    }
-    // check if command is RETR or STOR or LIST
-    else if(strcmp(command, "RETR") == 0 || strcmp(command, "STOR") == 0 || strcmp(command, "LIST") == 0){
-        //Open data connection to client
-        int data_sock = dataConnection(client_ip, client_port);
+            //Receive follow up command from client
+            char client_msg[CLIENT_MSG_SIZE];
+            bzero(client_msg,sizeof client_msg);
+            recv(sock, client_msg, sizeof(client_msg), 0);
 
-        if(strcmp(command, "RETR") == 0){
-            //If command is RETR
-            sendFile(sock, arg, data_sock);
-            return;
-        }
-        else if(strcmp(command, "STOR") == 0){
-            //If command is STOR
-            receiveFile(sock, arg, data_sock);
-            return;
-        }
-        else if(strcmp(command, "LIST") == 0){
-            //If command is LIST
-            listDirectory(sock, arg, data_sock);
-            return;
-        }
+            char *command = strtok(client_msg, " ");
+            char* arg = strtok(NULL, " ");
 
+            if(strcmp(command, "RETR") == 0){
+                //If command is RETR
+                sendFile(sock, arg, data_sock);
+                return;
+            }
+            else if(strcmp(command, "STOR") == 0){
+                //If command is STOR
+                receiveFile(sock, arg, data_sock);
+                return;
+            }
+            else if(strcmp(command, "LIST") == 0){
+                //If command is LIST
+                listDirectory(sock, arg, data_sock);
+                return;
+            }
+        }
+        else{
+            wait(NULL);
+        }
     }
     else{
         char msg_to_client[] = "502 Command not implemented.\n";
