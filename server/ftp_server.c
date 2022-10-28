@@ -76,8 +76,7 @@ int main(){
     FD_ZERO(&ready_sockets);
 
     // add server socket to current_sockets
-
-    FD_SET(server_socket,&current_sockets);
+    FD_SET(server_socket, &current_sockets);
     for (;;)
     {
         ready_sockets = current_sockets;
@@ -107,7 +106,6 @@ int main(){
                     bzero(cmd_from_client, CLIENT_MSG_SIZE);
                     // receive message
                     recv(fd,cmd_from_client,CLIENT_MSG_SIZE,0);
-
                     if(strncmp(cmd_from_client, "QUIT", 4) == 0 || strlen(cmd_from_client) == 0){
                         char msg_to_client[] = "221 Service closing control connection.\n";
                         send(fd,msg_to_client,sizeof(msg_to_client),0);
@@ -185,10 +183,10 @@ void checkUser(int sock, char* arg){
     else{
         for (int i = 0; i < LOGGED_IN_SIZE; i++){
             if (strcmp(logins_array[i].u_name,arg)==0){
-            char msg_to_client[] = "331 User name okay, need password.\n";
-            send(sock,msg_to_client,sizeof(msg_to_client),0);
-            strcpy(loggingIn_users[sock],arg);
-            return;
+                char msg_to_client[] = "331 User name okay, need password.\n";
+                send(sock,msg_to_client,sizeof(msg_to_client),0);
+                strcpy(loggingIn_users[sock],arg);
+                return;
             }
         }
         char msg_to_client[] = "530 Not logged in.\n";
@@ -390,6 +388,7 @@ void listDirectory(int sock, char* arg, int data_sock){
 void execute_client_command(int sock, char* client_command){
     char* command = strtok(client_command, " ");
     char* arg = strtok(NULL, " ");
+
     if(strcmp(command, "USER") == 0){
         //Check if user exists
         checkUser(sock, arg);
@@ -470,7 +469,7 @@ void execute_client_command(int sock, char* client_command){
 
     }
     else{
-        char msg_to_client[] = "502 Command not implemented.\n";
+        char msg_to_client[] = "202 Command not implemented.\n";
         send(sock,msg_to_client,sizeof(msg_to_client),0);
         return;
     }

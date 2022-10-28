@@ -548,7 +548,9 @@ void sendingPort(int sock, int client_ports, char* command){
       }
 
       // Send PORT command
-      if(send(sock, portCommand, sizeof(portCommand), 0) < 0){
+      printf("Port command is %s\n", portCommand);
+      if (send(sock, portCommand, sizeof(portCommand), 0) < 0)
+      {
          printf("Error sending command to server\n");
          exit(1);
       }
@@ -650,6 +652,7 @@ void sendingPort(int sock, int client_ports, char* command){
          }                 
       }
       else if(strcmp(client_command, "LIST") == 0){
+         printf("We are here\n");
          // Send command to server
          if(send(sock, command, sizeof(command), 0) < 0){
             printf("Error sending command to server\n");
