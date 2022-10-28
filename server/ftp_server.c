@@ -297,6 +297,7 @@ void sendFile(int sock, char* arg, int data_sock){
     if(arg==NULL){
         char client_msg1[]="501 Syntax error in parameters or arguments.\n";
         send(sock,client_msg1,sizeof client_msg1,0);
+        close(data_sock);
     }
     else{
         FILE *fp = fopen(arg, "rb");
@@ -327,6 +328,7 @@ void receiveFile(int sock, char* arg, int data_sock){
     if(arg==NULL){
         char client_msg1[]="501 Syntax error in parameters or arguments.\n";
         send(sock,client_msg1,sizeof client_msg1,0);
+        close(data_sock);
     }
     else{
         int randNumber = rand() % 1000;
@@ -353,26 +355,36 @@ void receiveFile(int sock, char* arg, int data_sock){
 }
 
 void listDirectory(int sock, char* arg, int data_sock){
-    if(arg!=NULL){
-        char client_msg1[]="501 Syntax error in parameters or arguments.\n";
-        send(sock,client_msg1,sizeof client_msg1,0);
-        close(data_sock);
+
+    char buffer[FILE_BUFFER_SIZE];
+    bzero(buffer, sizeof(buffer));
+
+    char command[1024];
+    if(arg==NULL){
+        sprintf(command, "ls");
     }
     else{
-        char client_msg1[]="150 File status okay; about to open data connection.\n";
-        send(sock,client_msg1,sizeof client_msg1,0);
-        char buffer[FILE_BUFFER_SIZE];
-        bzero(buffer, sizeof(buffer));
-        FILE *fp = popen("ls", "r");
-        while(fgets(buffer, FILE_BUFFER_SIZE, fp) != NULL){
-            send(data_sock, buffer, strlen(buffer), 0);
-            bzero(buffer, sizeof(buffer));
+        if(access(arg, F_OK) < 0){
+            char client_msg1[]="550 No such file or directory.\n";
+            send(sock,client_msg1,sizeof client_msg1,0);
+            close(data_sock);
+            return;
         }
-        pclose(fp);
-        close(data_sock);
-        char client_msg2[] = "226 Transfer completed.\n";
-        send(sock,client_msg2,sizeof client_msg2,0);
+        sprintf(command, "ls %s", arg);
     }
+    FILE *fp = popen(command, "r");
+
+    char client_msg1[] = "150 File status okay; about to open data connection.\n";
+    send(sock,client_msg1,sizeof client_msg1,0);
+
+    while(fgets(buffer, FILE_BUFFER_SIZE, fp) != NULL){
+        send(data_sock, buffer, strlen(buffer), 0);
+        bzero(buffer, sizeof(buffer));
+    }
+    pclose(fp);
+    close(data_sock);
+    char client_msg2[] = "226 Transfer completed.\n";
+    send(sock,client_msg2,sizeof client_msg2,0);
 }
 
 void execute_client_command(int sock, char* client_command){

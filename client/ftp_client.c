@@ -103,20 +103,20 @@ int main(){
                   exit(0);
             }
 
-            //allows reuse of address
-            int value = 1;
-            setsockopt(data_sock,SOL_SOCKET,SO_REUSEADDR,&value,sizeof(int)); 
+                //allows reuse of address
+                int value = 1;
+                setsockopt(data_sock,SOL_SOCKET,SO_REUSEADDR,&value,sizeof(int)); 
 
-            // Address structure of server
-            struct sockaddr_in client_sock_addr, server_addr;
-            int addrlen = sizeof(client_sock_addr);
-            bzero(&client_sock_addr,sizeof(client_sock_addr));
-            bzero(&server_addr,sizeof(server_addr));
+                // Address structure of server
+                struct sockaddr_in client_sock_addr, server_addr;
+                int addrlen = sizeof(client_sock_addr);
+                bzero(&client_sock_addr,sizeof(client_sock_addr));
+                bzero(&server_addr,sizeof(server_addr));
 
 
-            client_sock_addr.sin_family = AF_INET;
-            client_sock_addr.sin_addr.s_addr = inet_addr(IP_ADDRESS);
-            client_sock_addr.sin_port = htons(client_ports);
+                client_sock_addr.sin_family = AF_INET;
+                client_sock_addr.sin_addr.s_addr = inet_addr(IP_ADDRESS);
+                client_sock_addr.sin_port = htons(client_ports);
 
             // bind socket tp address
             if(bind(data_sock, (struct sockaddr*) &client_sock_addr, sizeof(client_sock_addr)) < 0){
